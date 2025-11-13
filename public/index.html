@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Multiplayer Demo - Client Prediction</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- nipplejs CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.9.0/nipplejs.min.js"></script>
+    <!-- socket.io client -->
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+
+<body>
+    <div id="lobby">
+        <h2>Multiplayer Demo</h2>
+        <input id="roomId" placeholder="Room ID (ex: room1)">
+        <input id="name" placeholder="Nama pemain">
+        <button id="btnJoin">Create / Join Room</button>
+        <p>Masukkan room id, lalu klik Create / Join.</p>
+    </div>
+
+    <div id="game" class="hidden">
+        <canvas id="canvas" width="800" height="600"></canvas>
+
+        <!-- Floating skill buttons (transparent) - for now inert -->
+        <div id="skillPanel">
+            <button class="skill">Damage</button>
+            <button class="skill">Speed</button>
+            <button class="skill">Defend</button>
+        </div>
+
+        <!-- joystick container -->
+        <div id="joystickArea"></div>
+
+        <!-- simple HUD -->
+        <div id="hud">
+            <div id="meName"></div>
+            <div class="bar hp">
+                <div class="fill" id="hpBar"></div>
+            </div>
+            <div class="bar energy">
+                <div class="fill" id="energyBar"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="/js/net.js"></script>
+    <script src="/js/game.js"></script>
+    <script src="/js/handler-skill.js"></script>
+</body>
+
+</html>
