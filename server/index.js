@@ -1,4 +1,3 @@
-// server/index.js (v2 - with HP, Energy, Skills)
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -24,11 +23,29 @@ const LOOT_INTERVAL = 3000; // tiap 5 detik spawn loot
 const LOOT_LIFETIME = 8000; // loot hilang setelah 8 detik
 
 // Tambahkan state loot dan timer ke tiap room
+function resetLobby(roomId) {
+  // Hapus timer sebelumnya jika ada
+  const room = rooms[roomId];
+  if (room && room.timer) {
+    clearInterval(room.timer);  // Stop existing timer
+    room.timer = null;  // Reset timer
+  }
+
+  // Hapus semua pemain dari room
+  for (let socketId in room.players) {
+    const player = room.players[socketId];
+    if (player.roomId === roomId) {
+      player.roomId = null;
+      console.log(`Player ${player.name} removed from room ${roomId}`);
+    }
+  }
+}
+
 function initMatch(roomId) {
   const room = rooms[roomId];
   if (!room) return;
   if (room.matchActive) return;
-  if (Object.keys(room.players).length < 2) return; // hanya start kalau ada 2+
+  if (Object.keys(room.players).length < 2) return; // hanya start kalau ada 2 pemain
 
   console.log('Match started in room', roomId);
   room.matchActive = true;
@@ -36,18 +53,30 @@ function initMatch(roomId) {
   room.matchEndTime = Date.now() + MATCH_DURATION;
 
   // Timer match
+  if (room.timer) clearInterval(room.timer);  // Clear timer sebelumnya
   room.timer = setInterval(() => {
     const remaining = room.matchEndTime - Date.now();
     if (remaining <= 0) {
+      // Game over logic
       clearInterval(room.timer);
       io.to(roomId).emit('game_over', { winner: null });
-      delete rooms[roomId];
+
+      // Reset atau hapus room setelah game selesai
+      console.log('Game Over. Resetting room', roomId);
+      delete rooms[roomId];  // Hapus room dari objek rooms
+
+      // Reset roomId di lobby
+      resetLobby(roomId);
+
+      // Kembali beri informasi ke client bahwa room sudah selesai
+      io.to(roomId).emit('room_reset');
     } else {
       io.to(roomId).emit('timer', { remaining });
     }
   }, 1000);
 
   // Loot spawn interval
+  if (room.lootSpawner) clearInterval(room.lootSpawner);  // Clear loot spawner sebelumnya
   room.lootSpawner = setInterval(() => {
     spawnLoot(roomId);
   }, LOOT_INTERVAL);
@@ -249,11 +278,17 @@ function checkGameOver(roomId) {
     io.to(roomId).emit('game_over', {
       winner: winner ? { id: winner.id, name: winner.name } : null
     });
+
     // clear room state
     for (const id in room.players) {
       room.players[id].alive = false;
     }
-    setTimeout(() => delete rooms[roomId], 1000);
+
+    setTimeout(() => {
+      resetLobby(roomId);
+      delete rooms[roomId];
+      io.to(roomId).emit('room_reset');
+    }, 1000);
   }
 }
 

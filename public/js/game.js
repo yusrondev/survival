@@ -386,6 +386,8 @@ window.onTimer(({ remaining }) => {
 window.onGameOver((data) => {
   alert(`Game Over!\nWinner: ${data.winner ? data.winner.name : 'No one'}`);
   resetGame();
+  matchTime = 0;  // Reset the timer when the game ends
+  document.getElementById('timer').innerText = `Time: ${matchTime}s`;  // Update the displayed timer
 });
 
 window.onPlayerDead((p) => {
