@@ -24,9 +24,16 @@ const LOOT_LIFETIME = 8000; // loot hilang setelah 8 detik
 
 // Tambahkan state loot dan timer ke tiap room
 function resetLobby(roomId) {
-  // Hapus timer sebelumnya jika ada
   const room = rooms[roomId];
-  if (room && room.timer) {
+
+  // Periksa apakah room ada
+  if (!room) {
+    console.log(`Room ${roomId} tidak ditemukan.`);
+    return; // Jika tidak ada room, langsung keluar dari fungsi
+  }
+
+  // Hapus timer sebelumnya jika ada
+  if (room.timer) {
     clearInterval(room.timer);  // Stop existing timer
     room.timer = null;  // Reset timer
   }
@@ -146,6 +153,10 @@ io.on('connection', (socket) => {
     if (Object.keys(rooms[roomId].players).length >= 2) {
       initMatch(roomId);
     }
+  });
+
+  socket.on('damageEffect', (data) => {
+    io.emit('spawnDamageEffect', data); // kirim ke semua klien
   });
 
   socket.on('pickup_loot', (lootId) => {

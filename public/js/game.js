@@ -19,6 +19,8 @@ const WORLD_WIDTH = 800;
 const WORLD_HEIGHT = 400;
 
 let speedEffectActive = false;
+let shieldActive = false;
+let shieldTimeout = null;
 
 let loots = [];
 let matchTime = 0;
@@ -78,12 +80,25 @@ function setupJoystick() {
   joystickManager = mgr;
 }
 
+function spawnShieldEffect(x, y) {
+  if (shieldActive) return; // Jika sudah ada shield aktif, tidak perlu spawn lagi.
+
+  shieldActive = true;
+
+  // Durasi shield, misalnya 3 detik
+  shieldTimeout = setTimeout(() => {
+    shieldActive = false;
+  }, 3000);
+}
+
+window.spawnShieldEffect = spawnShieldEffect;
+
 function spawnDamageEffect(x, y) {
   effects.push({
     x,
     y,
     img: damageEffectImg,
-    size: 85,                  // ukuran efek
+    size: 150,                  // ukuran efek
     alpha: 1,
     duration: 500,
     startTime: performance.now(),
@@ -133,7 +148,7 @@ const bgImage = new Image();
 bgImage.src = '/img/bg-black.avif';  // path relatif terhadap public
 
 const damageEffectImg = new Image();
-damageEffectImg.src = '/img/damage2.png'; // path PNG efek damage
+damageEffectImg.src = '/img/damage.png'; // path PNG efek damage
 
 // drawing
 function draw() {
@@ -159,7 +174,7 @@ function draw() {
     ctx.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
   }
 
-  const lerpFactor = 0.25;
+  const lerpFactor = 0.1;
 
   for (const id in players) {
     const p = players[id];
@@ -190,6 +205,22 @@ function draw() {
       ctx.shadowColor = 'yellow';
     } else {
       ctx.shadowBlur = 0;
+    }
+
+    // Efek shield (barrier)
+    if (window.shieldActive && id === me.id) {
+      // Warna pinggir shield (outline)
+      ctx.strokeStyle = 'rgba(0, 255, 255, 0.7)'; // Warna pinggir biru muda transparan
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, size * 1.5, 0, Math.PI * 2); // Menentukan posisi dan radius shield
+      ctx.stroke(); // Menggambar garis pinggir shield
+
+      // Mengisi bagian tengah shield dengan warna transparan
+      ctx.fillStyle = 'rgba(0, 255, 255, 0.2)'; // Warna transparan untuk bagian tengah shield (lebih transparan)
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, size * 1.5, 0, Math.PI * 2); // Menentukan posisi dan radius yang sama
+      ctx.fill(); // Mengisi bagian tengah dengan warna transparan
     }
 
     // gambar body
@@ -356,6 +387,10 @@ function loop(now) {
   updateHUD();
   requestAnimationFrame(loop);
 }
+
+window.socket.on('spawnDamageEffect', (data) => {
+  spawnDamageEffect(data.x, data.y);
+});
 
 // handle player join/leave
 window.onPlayerJoined((p) => {

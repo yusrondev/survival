@@ -29,10 +29,19 @@ function handleSkillClick(skillName) {
       clearTimeout(timeout);
       window.MAX_SPEED = oldSpeed;
     };
-  }else if (skillName === 'damage') {
+  } else if (skillName === 'damage') {
     // spawn efek damage di posisi player (client prediction)
     if (me) {
-      spawnDamageEffect(me.x, me.y);
+      // Kirim data ke server
+      window.socket.emit('damageEffect', { x: me.x, y: me.y });
+    }
+  } else if (skillName === 'defend') {
+    // Aktifkan shield/barrier
+    if (me) {
+      window.shieldActive = true;
+      window.shieldTimeout = setTimeout(() => {
+        window.shieldActive = false;  // nonaktifkan shield setelah 5 detik
+      }, 3000);
     }
   }
 }
@@ -42,7 +51,7 @@ btns.forEach((btn, idx) => {
 
   const COOLDOWNS = {
     speed: 5,
-    damage: 3,
+    damage: 2,
     defend: 4
   };
 
