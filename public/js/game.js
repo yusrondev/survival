@@ -78,19 +78,17 @@ function setupJoystick() {
   joystickManager = mgr;
 }
 
-function spawnDamageEffect(x, y, count = 3) {
-  for (let i = 0; i < count; i++) {
-    effects.push({
-      x: x + (Math.random() - 0.5) * 20, // offset random ±10px
-      y: y + (Math.random() - 0.5) * 20,
-      img: damageEffectImg,
-      size: 70 + Math.random() * 16,      // ukuran random 32~48px
-      alpha: 1,
-      duration: 500 + Math.random() * 200, // durasi random 500~700ms
-      startTime: performance.now(),
-      rotation: Math.random() * 2 * Math.PI // sudut acak
-    });
-  }
+function spawnDamageEffect(x, y) {
+  effects.push({
+    x,
+    y,
+    img: damageEffectImg,
+    size: 85,                  // ukuran efek
+    alpha: 1,
+    duration: 500,
+    startTime: performance.now(),
+    rotation: Math.random() * 2 * Math.PI // sudut acak antara 0 ~ 360 derajat
+  });
 }
 
 window.spawnDamageEffect = spawnDamageEffect;
@@ -135,7 +133,7 @@ const bgImage = new Image();
 bgImage.src = '/img/bg-black.avif';  // path relatif terhadap public
 
 const damageEffectImg = new Image();
-damageEffectImg.src = '/img/damage.png'; // path PNG efek damage
+damageEffectImg.src = '/img/damage2.png'; // path PNG efek damage
 
 // drawing
 function draw() {
@@ -243,16 +241,16 @@ function draw() {
       effects.splice(i, 1);
       continue;
     }
-    const alpha = 1 - elapsed / eff.duration;
+    const alpha = 1 - elapsed / eff.duration; // fade out
     ctx.globalAlpha = alpha;
 
     ctx.save();
-    ctx.translate(eff.x, eff.y);
-    ctx.rotate(eff.rotation);
+    ctx.translate(eff.x, eff.y);          // pindah ke pusat efek
+    ctx.rotate(eff.rotation);             // rotasi sesuai random
     ctx.drawImage(eff.img, -eff.size / 2, -eff.size / 2, eff.size, eff.size);
     ctx.restore();
 
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = 1; // reset alpha
   }
 
   ctx.restore(); // reset transformasi kamera
