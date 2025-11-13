@@ -20,7 +20,7 @@ function randomPos() {
 const COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6'];
 
 const MATCH_DURATION = 60 * 1000; // 1 menit
-const LOOT_INTERVAL = 5000; // tiap 5 detik spawn loot
+const LOOT_INTERVAL = 3000; // tiap 5 detik spawn loot
 const LOOT_LIFETIME = 8000; // loot hilang setelah 8 detik
 
 // Tambahkan state loot dan timer ke tiap room
@@ -164,21 +164,33 @@ io.on('connection', (socket) => {
   });
 
   // skill usage
+  const ENERGY_COST = {
+    speed: 20,
+    damage: 20,
+    defend: 10
+  };
+
   socket.on('use_skill', (skill) => {
     const roomId = socket.data.roomId;
     const room = rooms[roomId];
     if (!room) return;
+
     const me = room.players[socket.id];
     if (!me || !me.alive) return;
 
     const now = Date.now();
 
+    // cek skill valid
+    if (!ENERGY_COST[skill]) return;
+
+    // cek energi
+    const cost = ENERGY_COST[skill];
+    if (me.energy < cost) return;
+    me.energy -= cost;
+
     switch (skill) {
       case 'damage':
-        if (me.energy < 20) return;
-        me.energy -= 20;
-
-        // find nearest player
+        // cari target terdekat
         let nearest = null;
         let distMin = Infinity;
         for (const id in room.players) {
@@ -194,7 +206,7 @@ io.on('connection', (socket) => {
         }
 
         if (nearest) {
-          let dmg = 20;
+          let dmg = 20; // bisa juga bikin DAMAGE per skill constant
           if (nearest.defend) dmg *= 0.5;
           nearest.hp -= dmg;
           if (nearest.hp <= 0) {
@@ -207,17 +219,16 @@ io.on('connection', (socket) => {
         break;
 
       case 'speed':
-        if (me.energy < 15) return;
-        me.energy -= 15;
         me.speedUntil = now + 3000;
         break;
 
       case 'defend':
-        if (me.energy < 10) return;
-        me.energy -= 10;
         me.defendUntil = now + 3000;
         break;
     }
+
+    // broadcast update energi ke semua player di room
+    io.to(roomId).emit('update_energy', { id: me.id, energy: me.energy });
   });
 
   socket.on('disconnect', () => {
