@@ -24,3 +24,6 @@ window.onPlayerDead = function(cb) { window.socket.on('player_dead', cb); };
 window.onState = function(cb) { window.socket.on('state', cb); };
 window.onPlayerJoined = function(cb) { window.socket.on('player_joined', cb); };
 window.onPlayerLeft = function(cb) { window.socket.on('player_left', cb); };
+window.onLootSpawn = function(cb) { window.socket.on('loot_spawn', cb); };
+window.onLootRemove = function(cb) { window.socket.on('loot_remove', cb); };
+window.onTimer = function(cb) { window.socket.on('timer', cb); };

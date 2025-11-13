@@ -41,6 +41,8 @@ canvas {
   width:160px;
   height:160px;
   pointer-events:auto;
+  touch-action: none;      /* penting agar joystick bisa menerima pointer/touch bebas */
+  -ms-touch-action: none;
 }
 
 /* Floating skill buttons */
@@ -53,6 +55,7 @@ canvas {
   gap:10px;
 }
 #skillPanel .skill {
+  touch-action: manipulation;
   width:110px;
   opacity:0.85;
   background:rgba(255,255,255,0.08);
