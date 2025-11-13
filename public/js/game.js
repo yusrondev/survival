@@ -15,6 +15,9 @@ const ctxMini = minimap.getContext('2d');
 const hud = document.getElementById('hud');
 let hpBar, energyBar;
 
+const WORLD_WIDTH = 800;
+const WORLD_HEIGHT = 400;
+
 let speedEffectActive = false;
 
 let loots = [];
@@ -109,6 +112,9 @@ function drawMinimapFromMain() {
   }
 }
 
+const bgImage = new Image();
+bgImage.src = '/img/bg-black.avif';  // path relatif terhadap public
+
 // drawing
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -121,9 +127,17 @@ function draw() {
 
   // Terapkan transformasi kamera (translate & zoom)
   ctx.save();
-  ctx.translate(canvas.width / 2, canvas.height / 2);   // pusatkan tampilan
+  ctx.translate(canvas.width / 2, canvas.height / 2); // pusatkan
   ctx.scale(camera.zoom, camera.zoom);
   ctx.translate(-camera.x, -camera.y);
+
+  // Gambar background mengikuti kamera
+  if (bgImage.complete) {
+    ctx.drawImage(bgImage, 0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+  } else {
+    ctx.fillStyle = "#99cc99";
+    ctx.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+  }
 
   const lerpFactor = 0.25;
 
@@ -408,3 +422,13 @@ btnJoin.addEventListener('click', async () => {
     alert('Gagal join: ' + err);
   }
 });
+
+function resizeCanvas() {
+  canvas.width = WORLD_WIDTH;
+  canvas.height = WORLD_HEIGHT;
+
+  minimap.width = Math.min(200, window.innerWidth / 4);
+  minimap.height = Math.min(150, window.innerHeight / 4);
+}
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
