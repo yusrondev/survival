@@ -10,6 +10,8 @@ const nameInput = document.getElementById('name');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const meNameDiv = document.getElementById('meName');
+const minimap = document.getElementById('minimap');
+const ctxMini = minimap.getContext('2d');
 const hud = document.getElementById('hud');
 let hpBar, energyBar;
 
@@ -21,6 +23,14 @@ let matchTime = 0;
 let me = null;
 const players = {}; // other players and me: {id:{x,y,color,name}}
 let lastServerStateTs = 0;
+
+// Camera
+const camera = {
+  x: 0,
+  y: 0,
+  zoom: 1.2,  // zoom > 1 = zoom in, <1 = zoom out
+  smoothness: 0.1
+};
 
 // prediction data
 let inputSeq = 0;
@@ -63,9 +73,57 @@ function setupJoystick() {
   joystickManager = mgr;
 }
 
+function drawMinimapFromMain() {
+  ctxMini.clearRect(0, 0, minimap.width, minimap.height);
+
+  // tentukan skala dari world size ke minimap size
+  const worldWidth = canvas.width;
+  const worldHeight = canvas.height;
+  const scaleX = minimap.width / worldWidth;
+  const scaleY = minimap.height / worldHeight;
+
+  // gambar loot
+  for (const loot of loots) {
+    ctxMini.fillStyle = loot.type === 'hp' ? '#4cd137' : '#f1c40f';
+    ctxMini.beginPath();
+    ctxMini.arc(loot.x * scaleX, loot.y * scaleY, 5, 0, Math.PI * 2);
+    ctxMini.fill();
+  }
+
+  // gambar pemain
+  for (const id in players) {
+    const p = players[id];
+    ctxMini.fillStyle = p.color || '#fff';
+    ctxMini.fillRect(
+      p.x * scaleX - 4, // setengah ukuran minimap
+      p.y * scaleY - 4,
+      8, 8
+    );
+  }
+
+  // gambar posisi kita
+  if (me) {
+    ctxMini.strokeStyle = '#fff';
+    ctxMini.lineWidth = 2;
+    ctxMini.strokeRect(me.x * scaleX - 5, me.y * scaleY - 5, 10, 10);
+  }
+}
+
 // drawing
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (me) {
+    // Smooth follow camera ke posisi player
+    camera.x += (me.x - camera.x) * camera.smoothness;
+    camera.y += (me.y - camera.y) * camera.smoothness;
+  }
+
+  // Terapkan transformasi kamera (translate & zoom)
+  ctx.save();
+  ctx.translate(canvas.width / 2, canvas.height / 2);   // pusatkan tampilan
+  ctx.scale(camera.zoom, camera.zoom);
+  ctx.translate(-camera.x, -camera.y);
 
   const lerpFactor = 0.25;
 
@@ -78,7 +136,7 @@ function draw() {
 
     const size = 32;
 
-    // cek apakah player ini sedang speed (diri sendiri atau lawan)
+    // efek speed
     const isSpeedOwn = id === me?.id && window.SPEED_UP;
     const isSpeedOther = id !== me?.id && p.speedUntil && p.speedUntil > Date.now();
 
@@ -104,7 +162,7 @@ function draw() {
     ctx.fillStyle = p.color || '#fff';
     ctx.fillRect(p.x - size / 2, p.y - size / 2, size, size);
 
-    // HP bar untuk pemain lain
+    // HP bar dan nama
     if (id !== me?.id) {
       const barWidth = 40;
       const barHeight = 5;
@@ -112,42 +170,36 @@ function draw() {
       const barX = p.x - barWidth / 2;
       const barY = p.y - size / 2 - 10;
 
-      // gambar background bar
       ctx.fillStyle = '#555';
       ctx.fillRect(barX, barY, barWidth, barHeight);
-
-      // gambar health bar
       ctx.fillStyle = `hsl(${hpPercent * 120}, 100%, 50%)`;
       ctx.fillRect(barX, barY, barWidth * hpPercent, barHeight);
-
-      // border bar
       ctx.strokeStyle = '#000';
       ctx.strokeRect(barX, barY, barWidth, barHeight);
 
-      // gambar nama player di atas bar
       ctx.font = '12px Arial';
       ctx.fillStyle = '#fff';
       ctx.textAlign = 'center';
-      ctx.fillText(p.name || 'Player', p.x, barY - 5); // nama tepat di atas bar
-    } else{
-      // gambar nama
+      ctx.fillText(p.name || 'Player', p.x, barY - 5);
+    } else {
       ctx.fillStyle = '#fff';
       ctx.font = '12px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(p.name || 'Player', p.x, p.y - size / 2 - 10);
     }
 
-    // reset shadow sekali di akhir per pemain
     ctx.shadowBlur = 0;
   }
 
-  // gambar loot
+  // gambar loot (juga ikut kamera)
   for (const loot of loots) {
     ctx.fillStyle = loot.type === 'hp' ? '#4cd137' : '#f1c40f';
     ctx.beginPath();
     ctx.arc(loot.x, loot.y, 10, 0, Math.PI * 2);
     ctx.fill();
   }
+
+  ctx.restore(); // reset transformasi kamera
 }
 
 // setelah draw()
@@ -246,6 +298,7 @@ function loop(now) {
   }
 
   draw();
+  drawMinimapFromMain();
   updateHUD();
   requestAnimationFrame(loop);
 }
