@@ -35,6 +35,8 @@ const camera = {
   smoothness: 0.1
 };
 
+const effects = []; // simpan efek sementara
+
 // prediction data
 let inputSeq = 0;
 let pendingInputs = []; // inputs not yet acked by server
@@ -76,6 +78,23 @@ function setupJoystick() {
   joystickManager = mgr;
 }
 
+function spawnDamageEffect(x, y, count = 3) {
+  for (let i = 0; i < count; i++) {
+    effects.push({
+      x: x + (Math.random() - 0.5) * 20, // offset random ±10px
+      y: y + (Math.random() - 0.5) * 20,
+      img: damageEffectImg,
+      size: 70 + Math.random() * 16,      // ukuran random 32~48px
+      alpha: 1,
+      duration: 500 + Math.random() * 200, // durasi random 500~700ms
+      startTime: performance.now(),
+      rotation: Math.random() * 2 * Math.PI // sudut acak
+    });
+  }
+}
+
+window.spawnDamageEffect = spawnDamageEffect;
+
 function drawMinimapFromMain() {
   ctxMini.clearRect(0, 0, minimap.width, minimap.height);
 
@@ -114,6 +133,9 @@ function drawMinimapFromMain() {
 
 const bgImage = new Image();
 bgImage.src = '/img/bg-black.avif';  // path relatif terhadap public
+
+const damageEffectImg = new Image();
+damageEffectImg.src = '/img/damage.png'; // path PNG efek damage
 
 // drawing
 function draw() {
@@ -211,6 +233,26 @@ function draw() {
     ctx.beginPath();
     ctx.arc(loot.x, loot.y, 10, 0, Math.PI * 2);
     ctx.fill();
+  }
+
+  const now = performance.now();
+  for (let i = effects.length - 1; i >= 0; i--) {
+    const eff = effects[i];
+    const elapsed = now - eff.startTime;
+    if (elapsed > eff.duration) {
+      effects.splice(i, 1);
+      continue;
+    }
+    const alpha = 1 - elapsed / eff.duration;
+    ctx.globalAlpha = alpha;
+
+    ctx.save();
+    ctx.translate(eff.x, eff.y);
+    ctx.rotate(eff.rotation);
+    ctx.drawImage(eff.img, -eff.size / 2, -eff.size / 2, eff.size, eff.size);
+    ctx.restore();
+
+    ctx.globalAlpha = 1;
   }
 
   ctx.restore(); // reset transformasi kamera

@@ -29,6 +29,11 @@ function handleSkillClick(skillName) {
       clearTimeout(timeout);
       window.MAX_SPEED = oldSpeed;
     };
+  }else if (skillName === 'damage') {
+    // spawn efek damage di posisi player (client prediction)
+    if (me) {
+      spawnDamageEffect(me.x, me.y);
+    }
   }
 }
 

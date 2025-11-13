@@ -34,6 +34,10 @@ button { padding:10px 14px; border:none; border-radius:6px; cursor:pointer; back
   margin: 0 auto;
 }
 
+#meName{
+  display: none;
+}
+
 #canvas {
   background:#070707;
   width: 100%;
